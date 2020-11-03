@@ -11,8 +11,8 @@ namespace MultiplayerARPG
     {
 
         public float updateSmoothing = 15f;
-        public int zoneID = 0;
-        private int weatherID = 0;
+        public int zoneID;
+        public int weatherID = 0;
         [SerializeField]
         public LiteNetLibSyncField<float> networkHours = new LiteNetLibSyncField<float>();
         [SerializeField]
@@ -41,11 +41,17 @@ namespace MultiplayerARPG
             };
             EnviroSkyMgr.instance.OnZoneWeatherChanged += (EnviroWeatherPreset type, EnviroZone zone) =>
             {
-                // Get ZoneID
-                zoneID = GetEnviroZoneID(zone);
-                // Get WeatherID
-                weatherID = GetEnviroWeatherID(type);
-                CallNetFunction(SendWeatherToClient, FunctionReceivers.All, weatherID, zoneID);
+                for (int i = 0; i < EnviroSkyMgr.instance.Weather.zones.Count; i++)
+                {
+                    for (int w = 0; w < EnviroSkyMgr.instance.Weather.WeatherPrefabs.Count; w++)
+                    {
+                        if (EnviroSkyMgr.instance.Weather.WeatherPrefabs[w] == EnviroSkyMgr.instance.Weather.zones[i].currentActiveZoneWeatherPrefab) {
+                            CallNetFunction(SendWeatherToClient, FunctionReceivers.All, w, i);
+                        }
+
+                    }
+                }
+                
             };
 
             RegisterNetFunction<int>(RpcSeasonUpdate);
@@ -96,51 +102,25 @@ namespace MultiplayerARPG
                 EnviroSkyMgr.instance.SetTimeOfDay(Mathf.Lerp(EnviroSkyMgr.instance.GetUniversalTimeOfDay(), networkHours.Value, Time.deltaTime * updateSmoothing));
                 EnviroSkyMgr.instance.Time.ProgressTime = EnviroTime.TimeProgressMode.Simulated;
 
+                
+
             }
 
             networkHours.Value = EnviroSkyMgr.instance.GetUniversalTimeOfDay();
             EnviroSkyMgr.instance.OnZoneWeatherChanged += (EnviroWeatherPreset type, EnviroZone zone) =>
             {
-                // Get ZoneID
-                zoneID = GetEnviroZoneID(zone);
-                // Get WeatherID
-                weatherID = GetEnviroWeatherID(type);
-                CallNetFunction(SendWeatherToClient, FunctionReceivers.All, weatherID, zoneID);
+                for (int i = 0; i < EnviroSkyMgr.instance.Weather.zones.Count; i++)
+                {
+                    for (int w = 0; w < EnviroSkyMgr.instance.Weather.WeatherPrefabs.Count; w++)
+                    {
+                        if (EnviroSkyMgr.instance.Weather.WeatherPrefabs[w] == EnviroSkyMgr.instance.Weather.zones[i].currentActiveZoneWeatherPrefab)
+                        {
+                            CallNetFunction(SendWeatherToClient, FunctionReceivers.All, w, i);
+                        }
+
+                    }
+                }
             };
-        }
-
-        /// <summary>
-        /// Get ZoneID from Enviro
-        /// </summary>
-
-        public int GetEnviroZoneID(EnviroZone zone) {
-            // Gather all zones
-            for (int i = 0; i < EnviroSkyMgr.instance.Weather.zones.Count; i++) {
-                // Check if Zone is matching
-                if (EnviroSkyMgr.instance.Weather.zones[i] == zone) {
-                    // return int
-                    return i;
-                }
-            }
-            // Something went wrong, return 0
-            return 0;
-        }
-
-        /// <summary>
-        /// Get WeatherPresetID from Enviro
-        /// </summary>
-
-        public int GetEnviroWeatherID(EnviroWeatherPreset w) {
-            // Gather all Weahter Presets
-            for (int i = 0; i < EnviroSkyMgr.instance.Weather.weatherPresets.Count; i++) {
-                // Check if Weahter is matching
-                if (EnviroSkyMgr.instance.Weather.weatherPresets[i] == w) {
-                    // Return int
-                    return i;
-                }
-            }
-            // Something went wrong, return 0
-            return 0;
         }
     }
 }
